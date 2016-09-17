@@ -8,6 +8,7 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -21,7 +22,8 @@ public class NetSevrvice extends Service implements LocationListener{
     int fuellevel=15000;
     int id=10255;
     String regno="255-2020";
-
+    JSONArray locationaarray=new JSONArray();
+    int numberoflocationdata=0;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -38,10 +40,33 @@ public class NetSevrvice extends Service implements LocationListener{
     @Override
     public void onLocationChanged(Location location) {
 
+        if(numberoflocationdata==0){
+            locationaarray=new JSONArray();
+        }
+
+        JSONObject templocdata=new JSONObject();
+        try {
+            templocdata.put("speed",location.getSpeed());
+            templocdata.put("lat",location.getLatitude());
+            templocdata.put("lon",location.getLongitude());
+            locationaarray.put(templocdata);
+
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+
+
+        numberoflocationdata=numberoflocationdata+1;
+
+
+        if(numberoflocationdata==20){
+            generatemessage(locationaarray);
+        }
     }
 
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
+
 
     }
 
@@ -67,7 +92,7 @@ public class NetSevrvice extends Service implements LocationListener{
         return newTicketnumber;
     }
 
-    public JSONObject generatemessage(){
+    public JSONObject generatemessage(JSONArray locdata){
         numberOfTickets=numberOfTickets+generateTicketnumber();
         fuellevel=fuellevel-generateWastedFueltnumber();
         if(fuellevel<=0){
@@ -75,13 +100,14 @@ public class NetSevrvice extends Service implements LocationListener{
         }
 
         JSONObject message=new JSONObject();
+
         try {
             message.put("id",id);
             message.put("regno",regno);
             message.put("nooftickets",numberOfTickets);
             message.put("time",getSystemtime());
             message.put("fuel",fuellevel);
-            
+            message.put("datamov",locdata);
         } catch (JSONException e) {
             e.printStackTrace();
         }
