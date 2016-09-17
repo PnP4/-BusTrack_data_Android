@@ -1,30 +1,46 @@
 package com.ucsc.pnp.bustrack_data;
 
+import android.Manifest;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.support.annotation.Nullable;
+
+import android.support.v4.app.ActivityCompat;
+import android.util.Log;
+import android.widget.Toast;
+
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.Socket;
+import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Random;
 
 /**
  * Created by nrv on 9/18/16.
  */
-public class NetSevrvice extends Service implements LocationListener{
-    int numberOfTickets=0;
-    int fuellevel=15000;
-    int id=10255;
-    String regno="255-2020";
-    JSONArray locationaarray=new JSONArray();
-    int numberoflocationdata=0;
-    @Nullable
+public class NetSevrvice extends Service implements LocationListener {
+    int numberOfTickets = 0;
+    int fuellevel = 15000;
+    int id = 10255;
+    String regno = "255-2020";
+    JSONArray locationaarray = new JSONArray();
+    int numberoflocationdata = 0;
+
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -33,12 +49,18 @@ public class NetSevrvice extends Service implements LocationListener{
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         super.onStartCommand(intent, flags, startId);
+        LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        LocationListener locationListener = new NetSevrvice();
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+        }
+        locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 5, 1, locationListener);
 
         return START_STICKY;
     }
 
     @Override
     public void onLocationChanged(Location location) {
+
 
         if(numberoflocationdata==0){
             locationaarray=new JSONArray();
@@ -60,7 +82,8 @@ public class NetSevrvice extends Service implements LocationListener{
 
 
         if(numberoflocationdata==20){
-            generatemessage(locationaarray);
+           JSONObject tosend=generatemessage(locationaarray);
+            sendMessage(tosend);
         }
     }
 
@@ -112,11 +135,54 @@ public class NetSevrvice extends Service implements LocationListener{
             e.printStackTrace();
         }
 
-        return null;
+        return message;
     }
 
     public long getSystemtime(){
         return System.currentTimeMillis();
     }
 
+    public void sendMessage(final JSONObject msg){
+      Runnable runble=new Runnable() {
+          @Override
+          public void run() {
+              flushToNetwork(msg.toString());
+          }
+      };
+
+        Thread thread=new Thread(runble);
+        thread.start();
+
+    }
+
+    public void flushToNetwork(String msg) {
+
+        Socket smtpSocket = null;
+        DataOutputStream os = null;
+
+
+        try {
+            smtpSocket = new Socket("192.34.63.88", 8072);
+
+            os = new DataOutputStream(smtpSocket.getOutputStream());
+        } catch (UnknownHostException e) {
+
+        } catch (IOException e) {
+
+        }
+        if (smtpSocket != null && os != null) {
+            try {
+                os.writeBytes(msg);
+
+
+                os.close();
+                smtpSocket.close();
+            } catch (UnknownHostException e) {
+                System.err.println("Trying to connect to unknown host: " + e);
+            } catch (IOException e) {
+                System.err.println("IOException:  " + e);
+            }
+        }
+
+    }
 }
