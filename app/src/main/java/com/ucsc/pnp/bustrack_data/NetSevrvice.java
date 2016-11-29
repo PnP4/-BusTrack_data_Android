@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 
@@ -16,6 +17,14 @@ import android.util.Log;
 import android.widget.Toast;
 
 
+import org.apache.http.HttpResponse;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,6 +36,8 @@ import java.io.IOException;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 /**
@@ -81,7 +92,7 @@ public class NetSevrvice extends Service implements LocationListener {
         numberoflocationdata=numberoflocationdata+1;
 
 
-        if(numberoflocationdata==20){
+        if(numberoflocationdata>0){
            JSONObject tosend=generatemessage(locationaarray);
             sendMessage(tosend);
         }
@@ -143,7 +154,7 @@ public class NetSevrvice extends Service implements LocationListener {
     }
 
     public void sendMessage(final JSONObject msg){
-      Runnable runble=new Runnable() {
+     /* Runnable runble=new Runnable() {
           @Override
           public void run() {
               flushToNetwork(msg.toString());
@@ -151,7 +162,9 @@ public class NetSevrvice extends Service implements LocationListener {
       };
 
         Thread thread=new Thread(runble);
-        thread.start();
+        thread.start();*/
+
+        new SendNetwork().execute(msg.toString());
 
     }
 
@@ -185,4 +198,40 @@ public class NetSevrvice extends Service implements LocationListener {
         }
 
     }
+
+    public void postData(String json) {
+        // Create a new HttpClient and Post Header
+        HttpClient httpclient = new DefaultHttpClient();
+        HttpPost httppost = new HttpPost("http://138.197.30.34:5003");
+
+        try {
+            // Add your data
+            List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+            nameValuePairs.add(new BasicNameValuePair("data", json));
+            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+
+            // Execute HTTP Post Request
+            HttpResponse response = httpclient.execute(httppost);
+
+        } catch (ClientProtocolException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+    }
+
+    class SendNetwork extends AsyncTask<String,String,String>{
+
+        @Override
+        protected String doInBackground(String... params) {
+            postData(params[0]);
+            return null;
+        }
+    }
+
+
+
+
 }
