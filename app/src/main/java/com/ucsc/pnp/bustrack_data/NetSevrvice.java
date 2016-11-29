@@ -10,24 +10,23 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.os.IBinder;
-
 import android.support.v4.app.ActivityCompat;
 import android.util.Log;
-import android.widget.Toast;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.util.Random;
+import java.util.concurrent.TimeoutException;
+
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.Channel;
 
 /**
  * Created by nrv on 9/18/16.
@@ -78,10 +77,11 @@ public class NetSevrvice extends Service implements LocationListener {
         }
 
 
+
         numberoflocationdata=numberoflocationdata+1;
 
 
-        if(numberoflocationdata==20){
+        if(numberoflocationdata!=20){
            JSONObject tosend=generatemessage(locationaarray);
             sendMessage(tosend);
         }
@@ -159,15 +159,42 @@ public class NetSevrvice extends Service implements LocationListener {
 
         Socket smtpSocket = null;
         DataOutputStream os = null;
-
+        final String QUEUE_NAME ="filterdata";
 
         try {
-            smtpSocket = new Socket("192.34.63.88", 8072);
+            Log.e("PPPP","step1");
+            ConnectionFactory factory = new ConnectionFactory();
+            Log.e("PPPP","step2");
+            try {
+                factory.setHost("10.0.2.2");
+                //factory.setPort(15672);
+            } catch(Exception e1){
+                e1.printStackTrace();
+            }
+            Log.e("PPPP","step3");
+            Connection connection = factory.newConnection();
+            Log.e("PPPP","step4");
+            Channel channel = connection.createChannel();
+            Log.e("PPPP","step5");
+            channel.queueDeclare(QUEUE_NAME, false, false, false, null);
+            //String message = "Hello World!";
+            channel.basicPublish("", QUEUE_NAME, null, msg.getBytes());
+            //System.out.println(" [x] Sent '" + message + "'");
+
+        } catch(IOException | TimeoutException e){
+            System.out.println("Problem with Connecting");
+            e.printStackTrace();
+        }
+
+    /*    try {
+            smtpSocket = new Socket("10.22.127.2", 8072);
 
             os = new DataOutputStream(smtpSocket.getOutputStream());
         } catch (UnknownHostException e) {
+            e.printStackTrace();
 
         } catch (IOException e) {
+            e.printStackTrace();
 
         }
         if (smtpSocket != null && os != null) {
@@ -183,6 +210,6 @@ public class NetSevrvice extends Service implements LocationListener {
                 System.err.println("IOException:  " + e);
             }
         }
-
+*/
     }
 }
