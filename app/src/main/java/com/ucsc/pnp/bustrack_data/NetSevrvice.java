@@ -200,7 +200,7 @@ public class NetSevrvice extends Service implements LocationListener {
     }
 
     public void postData(String json) {
-        // Create a new HttpClient and Post Header
+
         HttpClient httpclient = new DefaultHttpClient();
         HttpPost httppost = new HttpPost("http://138.197.30.34:5003");
 
@@ -209,15 +209,10 @@ public class NetSevrvice extends Service implements LocationListener {
             List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
             nameValuePairs.add(new BasicNameValuePair("data", json));
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
-            // Execute HTTP Post Request
             HttpResponse response = httpclient.execute(httppost);
-
         } catch (ClientProtocolException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         } catch (IOException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
         }
     }
